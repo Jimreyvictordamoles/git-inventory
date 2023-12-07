@@ -1,7 +1,7 @@
 @extends('inventory.layout')
 
 @section('content')
-
+ 
     <div class="row">
         <div class="pull-left py-3">
             <h1>
@@ -9,6 +9,8 @@
             </h1>
 
             <a href="{{ url('/index/create') }}" class="btn btn-success my-3" title="Add new parts">Add new</a>
+
+             <a href="{{ route('category') }}" class="btn btn-primary my-3" title="Add new parts">View Categories</a>
         </div>
     </div>
 
@@ -40,7 +42,7 @@
                 <tr>
                     <td>{{ $item->id }}</td>
                     <td>{{ $item->computer_unit }}</td>
-                    <td>{{ $item->category }}</td>
+                    <td>{{ $item->category_name }}</td>
                     <td>{{ $item->quantity }}</td>
                     <td>{{ $item->status }}</td>
                     <td>{{ $item->remarks ? $item->remarks : 'N/A' }}</td>

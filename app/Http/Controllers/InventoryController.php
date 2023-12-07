@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Inventory;
+use App\Models\Category;
+use DB;
 
 class InventoryController extends Controller
 {
@@ -12,10 +14,62 @@ class InventoryController extends Controller
      */
     public function index()
     {
-        $inventory = Inventory::all();
+
+        // 1st approach 
+        $inventory = Inventory::join('categories','inventories.category_id','=','categories.id')
+            ->select([
+                'inventories.id',
+                'inventories.computer_unit',
+                'inventories.quantity',
+                'inventories.status',
+                'inventories.remarks',
+                'inventories.created_at',
+                'inventories.updated_at',
+                'categories.category_name'
+            ])->get();
+
+        // left join  - e display gihapon ang mga invalid/valid data
+        $left_join = DB::table('categories')
+                    ->leftJoin('inventories', 'categories.id', '=', 'inventories.category_id')
+                    ->get();
 
 
-        return view('inventory.index', compact('inventory'));
+        // right join - e display ra niya ang valid na data from inventories
+        $right_join = DB::table('categories')
+                    ->rightjoin('inventories', 'categories.id', '=', 'inventories.category_id')
+                    ->get();
+
+        $cross_join = DB::table('categories')
+                    ->crossJoin('inventories')
+                    ->get();
+
+        // dd($join, $left_join, $right_join, $cross_join);
+
+        // 2nd approach 
+        $inventory = Inventory::All(); //table 1
+        foreach($inventory as $item){ //table 2
+            $category = Category::find($item->category_id);
+            $item -> category_name = $category->category_name;
+        }
+
+        // 3rd approach 
+        $inventory_list = Inventory::All();
+        $category_list = Category::All();
+        foreach($inventory_list as $inventory){
+            foreach($category_list as $category){
+                if($inventory->category_id == $category->id){
+                    $inventory -> category_name = $category->category_name;
+                }
+            }
+        }
+
+        dd($inventory_list);
+
+
+
+        return view('inventory.index', [
+            'inventory' => $inventory,
+        ]);
     }
 
     /**
@@ -23,7 +77,11 @@ class InventoryController extends Controller
      */
     public function create()
     {
-        return view('inventory.create');
+        $category_list = Category::all();
+
+        return view('inventory.create', [
+            'category_list' => $category_list
+        ]);
     }
 
     /**
@@ -33,7 +91,7 @@ class InventoryController extends Controller
     {
         $request->validate([
             'computer_unit' => 'required',
-            'category' => 'required',
+            'category_id' => 'required',
             'quantity' => 'required|numeric',
             'status' => 'required',
             'remarks' => 'nullable',
@@ -41,7 +99,7 @@ class InventoryController extends Controller
 
         Inventory::create([
             'computer_unit' => $request->input('computer_unit'),
-            'category' => $request->input('category'),
+            'category_id' => $request->input('category_id'),
             'quantity' => $request->input('quantity'),
             'status' => $request->input('status'),
             'remarks' => $request->filled('remarks') ? $request->input('remarks') : null,
@@ -82,8 +140,11 @@ class InventoryController extends Controller
             return redirect()->route('inventory.index')->with('error', 'Inventory item not found.');
         }
 
+        $category_list = Category::all();
+
+
         // Pass the inventory item to the view
-        return view('inventory.edit', compact('inventory'));
+        return view('inventory.edit', compact('inventory','category_list'));
     }
 
     /**
@@ -94,7 +155,7 @@ class InventoryController extends Controller
         
         $request->validate([
             'computer_unit' => 'required',
-            'category' => 'required',
+            'category_id' => 'required',
             'quantity' => 'required|numeric',
             'status' => 'required',
             'remarks' => 'nullable',
@@ -112,7 +173,7 @@ class InventoryController extends Controller
         // Update the inventory item with the new data
         $inventory->update([
             'computer_unit' => $request->input('computer_unit'),
-            'category' => $request->input('category'),
+            'category_id' => $request->input('category_id'),
             'quantity' => $request->input('quantity'),
             'status' => $request->input('status'),
             'remarks' => $request->filled('remarks') ? $request->input('remarks') : null,
